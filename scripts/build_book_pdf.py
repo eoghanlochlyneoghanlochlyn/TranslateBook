@@ -120,7 +120,7 @@ files = sorted(
 )
 
 for path in files:
-    add_text(body, path)
+    add_text(body, path.read_text(encoding="utf-8"))
 
 doc = SimpleDocTemplate(
     str(OUTPUT),
