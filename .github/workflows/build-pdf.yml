@@ -11,6 +11,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: build-persian-pdf
+  cancel-in-progress: true
+
 jobs:
   build-pdf:
     runs-on: ubuntu-latest
@@ -34,6 +38,9 @@ jobs:
           curl -L --fail --retry 3 -o fonts/NotoNaskhArabic-Regular.ttf \
             https://github.com/google/fonts/raw/main/ofl/notonaskharabic/NotoNaskhArabic%5Bwght%5D.ttf
 
+      - name: Sync with latest main
+        run: git pull --rebase origin main
+
       - name: Build PDF
         run: python scripts/build_kotlovan_pdf.py
 
@@ -46,6 +53,5 @@ jobs:
             echo "PDF unchanged."
           else
             git commit -m "Build Persian PDF of Kotlovan"
-            git pull --rebase origin main
             git push origin HEAD:main
           fi
