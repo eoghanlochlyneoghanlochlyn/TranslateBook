@@ -5,6 +5,7 @@ ROOT=Path(__file__).resolve().parents[1]
 SOURCE=ROOT/"translations/kotlovan-fa-v2.txt"
 OUTPUT=ROOT/"translations/kotlovan-fa-v2-edited.txt"
 MODEL=os.getenv("GEMINI_MODEL","gemini-3.8-flash")
+FALLBACK_MODELS=["gemini-3.8-flash","gemini-3.6-flash","gemini-3.5-flash-lite"]
 API_KEY=os.getenv("GEMINI_API_KEY")
 PROMPT="""تو ویراستار ادبی حرفه‌ای زبان فارسی هستی و متن ترجمه‌شدهٔ رمان «گودال پی» اثر آندری پلاتونوف را برای انتشار ویرایش می‌کنی.
 وظیفه فقط ویرایش ادبی، زبانی و فنی است؛ بازترجمه یا تغییر محتوا ممنوع.
@@ -24,9 +25,10 @@ source=SOURCE.read_text(encoding="utf-8").replace("\r\n","\n").replace("\r","\n"
 markers=re.findall(r"^\[صفحهٔ\s*\d+\]\s*$",source,re.M)
 if len(markers)<2: fail("Expected page markers were not found.")
 prompt=PROMPT+"\n\nمتن زیر را کامل ویرایش کن. هیچ بخشی را خلاصه یا حذف نکن.\n\n"+source
-url=f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
+
 payload={"contents":[{"role":"user","parts":[{"text":prompt}]}],"generationConfig":{"temperature":0.2,"maxOutputTokens":65536}}
-def call():
+def call(model):
+    url=f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     data=json.dumps(payload,ensure_ascii=False).encode("utf-8")
     req=urllib.request.Request(url,data=data,headers={"Content-Type":"application/json","x-goog-api-key":API_KEY},method="POST")
     try:
@@ -37,7 +39,8 @@ def call():
 last=None
 for attempt in range(4):
     try:
-        response=call()
+        model = FALLBACK_MODELS[min(attempt, len(FALLBACK_MODELS)-1)]
+        response=call(model)
         parts=response.get("candidates",[{}])[0].get("content",{}).get("parts",[])
         edited="".join(p.get("text","") for p in parts).strip()
         if not edited: raise RuntimeError("Gemini returned empty output.")
@@ -54,7 +57,7 @@ for attempt in range(4):
             cleaned.append(line)
         edited="\n".join(cleaned).strip()+"\n"
         OUTPUT.write_text(edited,encoding="utf-8")
-        print(f"Created {OUTPUT}; pages={len(markers)}; source_chars={len(source)}; edited_chars={len(edited)}; model={MODEL}")
+        print(f"Created {OUTPUT}; pages={len(markers)}; source_chars={len(source)}; edited_chars={len(edited)}; model={model}")
         break
     except Exception as e:
         last=e; print(f"Attempt {attempt+1}/4 failed: {e}",file=sys.stderr)
