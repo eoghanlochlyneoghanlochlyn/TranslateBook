@@ -51,7 +51,25 @@ def load_sources():
         texts.append(normalize(path.read_text(encoding="utf-8")))
     return texts
 
-def split_pages(text):
+def split_pages(text, expected_start=None, expected_end=None):
+    # بعضی از فایل‌های صفحه‌بندی‌شده، به‌دلیل استخراج PDF، برچسب یک صفحه را
+    # جا انداخته‌اند. در این سه مورد، شروع صفحه با شماره فصل مشخص شده است.
+    if expected_start is not None and expected_end is not None:
+        inferred_starts = {
+            12: r"^\[۳\]\s*$",
+            57: r"^\[۹\]\s*$",
+            62: r"^\[۱۰\]\s*$",
+        }
+        for page_no in range(expected_start, expected_end + 1):
+            if not re.search(rf"^\[صفحهٔ\s*{page_no}\]\s*$", text, re.M):
+                chapter_pattern = inferred_starts.get(page_no)
+                if chapter_pattern:
+                    match = re.search(chapter_pattern, text, re.M)
+                    if match:
+                        marker = f"[صفحهٔ {page_no}]"
+                        text = text[:match.start()] + marker + "\n\n" + text[match.start():]
+                        break
+
     matches = list(re.finditer(r"^\[صفحهٔ\s*(\d+)\]\s*$", text, re.M))
     if not matches:
         fail("No page markers found.")
@@ -96,8 +114,10 @@ def clean_dialogues(text):
 
 sources = load_sources()
 all_pages = []
-for source in sources:
-    all_pages.extend(split_pages(source))
+ranges = [(1, 10)] + [(a, b) for a, b in [(11,15),(16,20),(21,25),(26,30),(31,35),(36,40),
+                                           (41,45),(46,50),(51,55),(56,60),(61,65),(66,71)]]
+for source, (start_page, end_page) in zip(sources, ranges):
+    all_pages.extend(split_pages(source, start_page, end_page))
 
 numbers = [int(re.match(r"^\[صفحهٔ\s*(\d+)\]", p).group(1)) for p in all_pages]
 expected = list(range(1, 72))
