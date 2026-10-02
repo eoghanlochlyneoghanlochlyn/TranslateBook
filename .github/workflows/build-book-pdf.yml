@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - "translations/kotlovan-fa-v2.txt"
       - "translations/kotlovan-fa-v2-pages-*.txt"
       - "scripts/build_book_pdf.py"
       - ".github/workflows/build-book-pdf.yml"
@@ -22,7 +23,7 @@ jobs:
       - name: Install Persian PDF dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y             python3-pip             fonts-noto-core             fonts-noto-extra             fonts-dejavu
+          sudo apt-get install -y python3-pip fonts-noto-core fonts-noto-extra fonts-dejavu
           python3 -m pip install --upgrade pip
           python3 -m pip install reportlab arabic-reshaper python-bidi
 
