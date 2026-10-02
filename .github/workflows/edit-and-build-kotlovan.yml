@@ -35,7 +35,7 @@ jobs:
       - name: Professionally edit translation
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL: gemini-3.8-flash
+          GEMINI_MODEL: gemini-3.5-flash-lite
         run: python scripts/edit_kotlovan.py
       - name: Build edited PDF
         run: python scripts/build_edited_kotlovan_pdf.py
