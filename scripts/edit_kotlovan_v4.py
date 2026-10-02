@@ -46,12 +46,7 @@ def markers(text):
 def load_sources():
     if not FIRST_SOURCE.exists():
         fail(f"Missing source: {FIRST_SOURCE}")
-    texts = [normalize(FIRST_SOURCE.read_text(encoding="utf-8"))]
-    for path in EXTRA_SOURCES:
-        if not path.exists():
-            fail(f"Missing source: {path}")
-        texts.append(normalize(path.read_text(encoding="utf-8")))
-    return texts
+    return [normalize(FIRST_SOURCE.read_text(encoding="utf-8"))]
 
 def split_pages(text, expected_start=None, expected_end=None):
     # بعضی از فایل‌های صفحه‌بندی‌شده، به‌دلیل استخراج PDF، برچسب یک صفحه را
