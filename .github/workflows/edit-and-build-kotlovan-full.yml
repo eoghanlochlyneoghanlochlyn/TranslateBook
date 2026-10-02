@@ -1,0 +1,59 @@
+name: Edit and Build Full Persian Kotlovan
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: edit-build-kotlovan-full
+  cancel-in-progress: true
+
+jobs:
+  edit-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install PDF dependencies and Persian fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-core fonts-noto-extra fonts-dejavu
+          python -m pip install --upgrade pip
+          python -m pip install reportlab arabic-reshaper python-bidi
+
+      - name: Professionally edit all 71 pages
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-3.5-flash-lite
+        run: python scripts/edit_kotlovan_full.py
+
+      - name: Build full edited PDF
+        run: python scripts/build_kotlovan_full_pdf.py
+
+      - name: Upload full PDF artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: kotlovan-fa-v3-full-pdf
+          path: pdf/kotlovan-fa-v3-edited.pdf
+          if-no-files-found: error
+          archive: false
+
+      - name: Commit full edited text and PDF
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add translations/kotlovan-fa-v3-edited.txt pdf/kotlovan-fa-v3-edited.pdf
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Build full professionally edited Persian Kotlovan"
+            git push origin HEAD:main
+          fi
