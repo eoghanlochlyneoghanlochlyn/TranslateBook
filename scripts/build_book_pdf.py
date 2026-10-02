@@ -80,6 +80,7 @@ def add_text(body, raw):
         if s in {
             "گودال پی",
             "آندری پلاتونوف",
+            "ترجمهٔ فارسی ــ بازترجمهٔ ادبی، نسخهٔ آزمایشی",
             "ترجمهٔ فارسی ــ بازترجمهٔ ادبی، نسخهٔ ۲",
         }:
             continue
@@ -92,7 +93,7 @@ def add_text(body, raw):
 
 body = []
 
-# Pages 1–10 come from the complete translation file.
+# Source pages 1–10 are stored in the complete translation file.
 complete_file = TRANSLATIONS / "kotlovan-fa-v2.txt"
 if not complete_file.exists():
     raise SystemExit(f"Missing required source file: {complete_file}")
@@ -104,24 +105,15 @@ markers = list(marker_re.finditer(raw_complete))
 if not markers:
     raise SystemExit("No source page markers found in kotlovan-fa-v2.txt.")
 
-start_1_10 = next(
-    (m.start() for m in markers if int(m.group(1)) == 1),
-    None,
-)
-start_11 = next(
-    (m.start() for m in markers if int(m.group(1)) == 11),
-    None,
-)
+page_numbers = [int(m.group(1)) for m in markers]
+if 1 not in page_numbers:
+    raise SystemExit("Source page 1 marker is missing from kotlovan-fa-v2.txt.")
 
-if start_11 is None:
-    raise SystemExit("Could not locate the beginning of source page 11.")
+# The complete file currently contains pages 1–10. Do not assume page 11
+# exists in this file; later pages are stored in the batch files below.
+add_text(body, raw_complete)
 
-if start_1_10 is None:
-    start_1_10 = 0
-
-add_text(body, raw_complete[start_1_10:start_11])
-
-# Pages 11 onward keep using the existing page-batch files.
+# Pages 11 onward are stored in the existing page-batch files.
 files = sorted(
     TRANSLATIONS.glob("kotlovan-fa-v2-pages-*.txt"),
     key=lambda p: int(re.search(r"pages-(\d+)", p.name).group(1)),
